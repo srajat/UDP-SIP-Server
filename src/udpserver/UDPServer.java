@@ -6,103 +6,212 @@ package udpserver;
  * @date 8/Jun/2016
  * @project UDP_Server
  */
+import gov.nist.javax.sip.stack.MessageProcessor;
 import java.net.*;
 import java.io.*;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.TooManyListenersException;
+import javax.sip.*;
+import javax.sip.address.*;
+import javax.sip.header.*;
+import javax.sip.message.*;
+import org.apache.log4j.*;
+
 
 public class UDPServer 
 {
     private static final int ECHOMAX = 1023;
-
-    public static void main(String[] args) throws IOException 
+    
+    
+    public static void main(String[] args) throws IOException, PeerUnavailableException, TransportNotSupportedException, InvalidArgumentException, ObjectInUseException, TooManyListenersException 
     {
+        String username;
+        MessageProcessor messageProcessor;
+        SipStack sipStack;
+        SipFactory sipFactory;
+        AddressFactory addressFactory;
+        HeaderFactory headerFactory;
+        MessageFactory messageFactory;
+        SipProvider sipProvider;
+        
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("Enter the port of the server: ");
         int servPort = Integer.parseInt(br.readLine());
         
         DatagramSocket socket = new DatagramSocket(servPort) ;
         DatagramPacket packet = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+        username = "Server1";
+        sipFactory = SipFactory.getInstance();
+        sipFactory.setPathName("gov.nist");
+        Properties properties = new Properties();
+	properties.setProperty("javax.sip.STACK_NAME", "rajat");
+        properties.setProperty("javax.sip.IP_ADDRESS","127.0.0.1");
+        //properties.setProperty("javax.sip.PATH_NAME","myStack");
+        System.out.println(properties);
+	sipStack = sipFactory.createSipStack(properties);
+        headerFactory = sipFactory.createHeaderFactory();
+	addressFactory = sipFactory.createAddressFactory();
+	messageFactory = sipFactory.createMessageFactory();
+        ListeningPoint udp = sipStack.createListeningPoint("127.0.0.1", 5060, "udp");
+        sipProvider = sipStack.createSipProvider(udp);
+        SipLayer sipLayer = new SipLayer();
+	sipProvider.addSipListener(sipLayer);
+        
         for (;;) 
         { 
             socket.receive(packet);
-            byte[] arr = packet.getData();
-            String request_msg = new String(arr);
-            StringTokenizer st = new StringTokenizer(request_msg,"\r\n");
-            
-            /*while(st.hasMoreTokens())
-            {
-                System.out.println(st.nextToken());
-                System.out.println();
-            }*/
-            
-            //register_req r1 = new register_req();
-            String req = "SIP/2.0 200 OK\r\n";
-            while(st.hasMoreTokens())
-            {
-                req = req + st.nextToken() + "\r\n";
-            }
-            req = req + "\r\n";
-            System.out.println("Handling client at " + packet.getAddress().getHostAddress() + " on port " + packet.getPort());
-            System.out.println(req);
-
-
-            //String register_response = r1.print();
-            byte[] send = req.getBytes();
-            DatagramPacket packet1 = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
             InetAddress clientAddress = packet.getAddress();
-            packet1.setAddress(clientAddress);
-            packet1.setPort(packet.getPort());
-            packet1.setData(send);
-            //System.out.println(register_response);
-            socket.send(packet1);
+            int clientPort = packet.getPort();
+            
+            byte[] arr = packet.getData();
+            String request_msg = new String(arr);           
+                
             packet.setLength(ECHOMAX); 
         }
+               
+    }
         /* NOT REACHED */
-    }
 }
-
-/*class register_req
+    
+class SipLayer implements SipListener 
 {
-    String typeOfMsg,clientIp,serverIp,networkProtocol,
-    branchNo,from,tag,to,callId;
+    /**
+     * This method uses the SIP stack to send a message. 
+     */
+    /*public void sendMessage(String to, String message) throws ParseException,
+	    InvalidArgumentException, SipException {
 
-    int cSeq,maxForwards,contentLength,contact,toNo,fromNo,serverPort;
+	SipURI from = addressFactory.createSipURI(getUsername(), getHost()
+		+ ":" + getPort());
+	Address fromNameAddress = addressFactory.createAddress(from);
+	fromNameAddress.setDisplayName(getUsername());
+	FromHeader fromHeader = headerFactory.createFromHeader(fromNameAddress,
+		"textclientv1.0");
 
-    double sipVersion;
+	String username = to.substring(to.indexOf(":") + 1, to.indexOf("@"));
+	String address = to.substring(to.indexOf("@") + 1);
 
-    register_req()
-    {
-        typeOfMsg="";
-        clientIp="";
-        serverIp="";
-        networkProtocol="";
-        branchNo="";
-        from="";
-        tag="";
-        to="";
-        callId="";
+	SipURI toAddress = addressFactory.createSipURI(username, address);
+	Address toNameAddress = addressFactory.createAddress(toAddress);
+	toNameAddress.setDisplayName(username);
+	ToHeader toHeader = headerFactory.createToHeader(toNameAddress, null);
 
-        cSeq=0;
-        maxForwards=0;
-        contentLength=0;
-        contact=0;
-        toNo=0;
-        fromNo=0;
-        serverPort=0;
+	SipURI requestURI = addressFactory.createSipURI(username, address);
+	requestURI.setTransportParam("udp");
 
-        sipVersion=0.0;
+	ArrayList viaHeaders = new ArrayList();
+	ViaHeader viaHeader = headerFactory.createViaHeader(getHost(),
+		getPort(), "udp", "branch1");
+	viaHeaders.add(viaHeader);
+
+	CallIdHeader callIdHeader = sipProvider.getNewCallId();
+
+	CSeqHeader cSeqHeader = headerFactory.createCSeqHeader(1,
+		Request.MESSAGE);
+
+	MaxForwardsHeader maxForwards = headerFactory
+		.createMaxForwardsHeader(70);
+
+	Request request = messageFactory.createRequest(requestURI,
+		Request.MESSAGE, callIdHeader, cSeqHeader, fromHeader,
+		toHeader, viaHeaders, maxForwards);
+
+	SipURI contactURI = addressFactory.createSipURI(getUsername(),
+		getHost());
+	contactURI.setPort(getPort());
+	Address contactAddress = addressFactory.createAddress(contactURI);
+	contactAddress.setDisplayName(getUsername());
+	ContactHeader contactHeader = headerFactory
+		.createContactHeader(contactAddress);
+	request.addHeader(contactHeader);
+
+	ContentTypeHeader contentTypeHeader = headerFactory
+		.createContentTypeHeader("text", "plain");
+	request.setContent(message, contentTypeHeader);
+
+	sipProvider.sendRequest(request);
+    }*/
+
+    
+    /** This method is called by the SIP stack when a response arrives. */
+    public void processResponse(ResponseEvent evt) {
+	Response response = evt.getResponse();
+	int status = response.getStatusCode();
+
+	System.out.println(response);
+	
     }
-    String print()
-    {
-        String p;
-        p = "SIP/"+sipVersion+" 200 OK\r\n"+
-            "Via: SIP/"+sipVersion+"/"+networkProtocol+" "+clientIp+":"+serverPort+";branch="+branchNo+";recieved=192.0.2.201\r\n"+
-            "From: "+from+" <sips:"+fromNo+"@"+serverIp+">;tag="+tag+"\r\n"+
-            "To: "+to+" <sips:"+ toNo+"@"+serverIp+">\r\n"+
-            "Call-ID: "+ callId+"@"+serverIp+"\r\n"+
-            "CSeq: "+cSeq+" "+ typeOfMsg+"\r\n"+
-            "Contact: <sips:"+from+"@"+clientIp+">;expires=7200"+"\r\n"+
-            "Content-Length: "+contentLength+"\r\n\r\n";
-        return p;
+
+    /** 
+     * This method is called by the SIP stack when a new request arrives. 
+     */
+    public void processRequest(RequestEvent evt) {
+	Request req = evt.getRequest();
+
+	String method = req.getMethod();
+	System.out.println(req);
     }
-}*/
+
+
+    /** 
+     * This method is called by the SIP stack when there's no answer 
+     * to a message. Note that this is treated differently from an error
+     * message. 
+     */
+    public void processTimeout(TimeoutEvent evt) {
+	//messageProcessor
+		//.processError("Previous message not sent: " + "timeout");
+    }
+
+    /** 
+     * This method is called by the SIP stack when there's an asynchronous
+     * message transmission error.  
+     */
+    public void processIOException(IOExceptionEvent evt) {
+	//messageProcessor.processError("Previous message not sent: "
+		//+ "I/O Exception");
+    }
+
+    /** 
+     * This method is called by the SIP stack when a dialog (session) ends. 
+     */
+    public void processDialogTerminated(DialogTerminatedEvent evt) {
+    }
+
+    /** 
+     * This method is called by the SIP stack when a transaction ends. 
+     */
+    public void processTransactionTerminated(TransactionTerminatedEvent evt) {
+    }
+
+    /*public String getHost() {
+	int port = sipProvider.getListeningPoint().getPort();
+	String host = sipStack.getIPAddress();
+	return host;
+    }
+
+    public int getPort() {
+	int port = sipProvider.getListeningPoint().getPort();
+	return port;
+    }
+
+    public String getUsername() {
+	return username;
+    }
+
+    public void setUsername(String newUsername) {
+	username = newUsername;
+    }
+
+    public MessageProcessor getMessageProcessor() {
+	return messageProcessor;
+    }
+
+    public void setMessageProcessor(MessageProcessor newMessageProcessor) {
+	messageProcessor = newMessageProcessor;
+    }*/
+
+}
