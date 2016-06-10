@@ -6,212 +6,289 @@ package udpserver;
  * @date 8/Jun/2016
  * @project UDP_Server
  */
-import gov.nist.javax.sip.stack.MessageProcessor;
+
 import java.net.*;
 import java.io.*;
-import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Properties;
 import java.util.StringTokenizer;
-import java.util.TooManyListenersException;
-import javax.sip.*;
-import javax.sip.address.*;
-import javax.sip.header.*;
-import javax.sip.message.*;
-import org.apache.log4j.*;
 
-
-public class UDPServer 
+public class UDPServer
 {
-    private static final int ECHOMAX = 1023;
+    private static final int ECHOMAX = 1024;
     
-    
-    public static void main(String[] args) throws IOException, PeerUnavailableException, TransportNotSupportedException, InvalidArgumentException, ObjectInUseException, TooManyListenersException 
-    {
-        String username;
-        MessageProcessor messageProcessor;
-        SipStack sipStack;
-        SipFactory sipFactory;
-        AddressFactory addressFactory;
-        HeaderFactory headerFactory;
-        MessageFactory messageFactory;
-        SipProvider sipProvider;
-        
+    public static void main(String[] args) throws IOException
+    {           
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("Enter the port of the server: ");
         int servPort = Integer.parseInt(br.readLine());
         
         DatagramSocket socket = new DatagramSocket(servPort) ;
         DatagramPacket packet = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
-        username = "Server1";
-        sipFactory = SipFactory.getInstance();
-        sipFactory.setPathName("gov.nist");
-        Properties properties = new Properties();
-	properties.setProperty("javax.sip.STACK_NAME", "rajat");
-        properties.setProperty("javax.sip.IP_ADDRESS","127.0.0.1");
-        //properties.setProperty("javax.sip.PATH_NAME","myStack");
-        System.out.println(properties);
-	sipStack = sipFactory.createSipStack(properties);
-        headerFactory = sipFactory.createHeaderFactory();
-	addressFactory = sipFactory.createAddressFactory();
-	messageFactory = sipFactory.createMessageFactory();
-        ListeningPoint udp = sipStack.createListeningPoint("127.0.0.1", 5060, "udp");
-        sipProvider = sipStack.createSipProvider(udp);
-        SipLayer sipLayer = new SipLayer();
-	sipProvider.addSipListener(sipLayer);
-        
-        for (;;) 
-        { 
+       
+            
+        for (;;)
+        {
             socket.receive(packet);
+            
             InetAddress clientAddress = packet.getAddress();
             int clientPort = packet.getPort();
             
-            byte[] arr = packet.getData();
-            String request_msg = new String(arr);           
+            byte[] arr = new byte[packet.getLength()];
+            System.arraycopy(packet.getData(), packet.getOffset(), arr, 0, arr.length);
+            String requestMsg = new String(arr);
+            
+            //System.out.println(request_msg);
+            StringTokenizer st = new StringTokenizer(requestMsg,"\r\n");
+            String line1 = st.nextToken();
+            String typeOfMsg = line1.substring(0, line1.indexOf(" "));
+            
+            if("REGISTER".equals(typeOfMsg))
+            {
+                registerRequest r = new registerRequest();
+                String feildName = "";
+                String nextLine = "";
+                while(st.hasMoreTokens())
+                {
+                    nextLine = st.nextToken();
+                    feildName = nextLine.substring(0,nextLine.indexOf(":"));
+                    if("Via".equals(feildName))
+                        r.via = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("From".equals(feildName))
+                        r.from = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("To".equals(feildName))
+                        r.to = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Call-ID".equals(feildName))
+                        r.callId = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("CSeq".equals(feildName))
+                        r.cSeq = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Contact".equals(feildName))
+                        r.contact = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Allow".equals(feildName))
+                        r.allow = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Max-Forwards".equals(feildName))
+                        r.maxForwards = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Allow-Events".equals(feildName))
+                        r.allowEvents = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("User-Agent".equals(feildName))
+                        r.userAgent = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Supported".equals(feildName))
+                        r.supported = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Expires".equals(feildName))
+                        r.expires = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Content-Length".equals(feildName))
+                        r.contentLength = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                }
                 
-            packet.setLength(ECHOMAX); 
+                byte[] send = r.OK_200().getBytes();
+                DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                p.setAddress(clientAddress);
+                p.setPort(clientPort);
+                p.setData(send);
+                socket.send(p);
+            }
+            else if("INVITE".equals(typeOfMsg))
+            {
+                inviteRequest i = new inviteRequest();
+                String feildName = "";
+                String nextLine = "";
+                while(st.hasMoreTokens())
+                {
+                    nextLine = st.nextToken();
+                    feildName = nextLine.substring(0,nextLine.indexOf(":"));
+                    
+                    if("Via".equals(feildName))
+                        i.via = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("From".equals(feildName))
+                        i.from = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("To".equals(feildName))
+                        i.to = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Call-ID".equals(feildName))
+                        i.callId = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("CSeq".equals(feildName))
+                        i.cSeq = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Contact".equals(feildName))
+                        i.contact = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Content-Type".equals(feildName))
+                        i.contentType = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Allow".equals(feildName))
+                        i.allow = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Max-Forwards".equals(feildName))
+                        i.maxForwards = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Supported".equals(feildName))
+                        i.supported = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("P-Early-Media".equals(feildName))
+                        i.pEarlyMedia = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("User-Agent".equals(feildName))
+                        i.userAgent = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("P-Preferred-Identity".equals(feildName))
+                        i.prefferedIdentity = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Content-Length".equals(feildName))
+                    {
+                        i.contentLength = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                        break;
+                    }
+                }
+                while(st.hasMoreTokens())
+                {
+                    nextLine = st.nextToken();
+                    feildName = nextLine.substring(0,nextLine.indexOf("="));
+                    if("v".equals(feildName))
+                        i.v = nextLine.substring(nextLine.indexOf("=")+1,nextLine.length());
+                    else if("o".equals(feildName))
+                        i.o = nextLine.substring(nextLine.indexOf("=")+1,nextLine.length());
+                    else if("s".equals(feildName))
+                        i.s = nextLine.substring(nextLine.indexOf("=")+1,nextLine.length());
+                    else if("c".equals(feildName))
+                        i.c = nextLine.substring(nextLine.indexOf("=")+1,nextLine.length());
+                    else if("t".equals(feildName))
+                        i.t = nextLine.substring(nextLine.indexOf("=")+1,nextLine.length());
+                    else if("m".equals(feildName))
+                        i.m = nextLine.substring(nextLine.indexOf("=")+1,nextLine.length());
+                    else if("a".equals(feildName))
+                        i.a.add(nextLine.substring(nextLine.indexOf("=")+1,nextLine.length()));
+                }
+                
+                //System.out.println(i.TRYING_100());
+                byte[] send = i.TRYING_100().getBytes();
+                DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                p.setAddress(clientAddress);
+                p.setPort(clientPort);
+                p.setData(send);
+                socket.send(p);
+            }
+            
+            packet.setLength(ECHOMAX);
         }
-               
     }
-        /* NOT REACHED */
+    
 }
-    
-class SipLayer implements SipListener 
+class Request
 {
-    /**
-     * This method uses the SIP stack to send a message. 
-     */
-    /*public void sendMessage(String to, String message) throws ParseException,
-	    InvalidArgumentException, SipException {
-
-	SipURI from = addressFactory.createSipURI(getUsername(), getHost()
-		+ ":" + getPort());
-	Address fromNameAddress = addressFactory.createAddress(from);
-	fromNameAddress.setDisplayName(getUsername());
-	FromHeader fromHeader = headerFactory.createFromHeader(fromNameAddress,
-		"textclientv1.0");
-
-	String username = to.substring(to.indexOf(":") + 1, to.indexOf("@"));
-	String address = to.substring(to.indexOf("@") + 1);
-
-	SipURI toAddress = addressFactory.createSipURI(username, address);
-	Address toNameAddress = addressFactory.createAddress(toAddress);
-	toNameAddress.setDisplayName(username);
-	ToHeader toHeader = headerFactory.createToHeader(toNameAddress, null);
-
-	SipURI requestURI = addressFactory.createSipURI(username, address);
-	requestURI.setTransportParam("udp");
-
-	ArrayList viaHeaders = new ArrayList();
-	ViaHeader viaHeader = headerFactory.createViaHeader(getHost(),
-		getPort(), "udp", "branch1");
-	viaHeaders.add(viaHeader);
-
-	CallIdHeader callIdHeader = sipProvider.getNewCallId();
-
-	CSeqHeader cSeqHeader = headerFactory.createCSeqHeader(1,
-		Request.MESSAGE);
-
-	MaxForwardsHeader maxForwards = headerFactory
-		.createMaxForwardsHeader(70);
-
-	Request request = messageFactory.createRequest(requestURI,
-		Request.MESSAGE, callIdHeader, cSeqHeader, fromHeader,
-		toHeader, viaHeaders, maxForwards);
-
-	SipURI contactURI = addressFactory.createSipURI(getUsername(),
-		getHost());
-	contactURI.setPort(getPort());
-	Address contactAddress = addressFactory.createAddress(contactURI);
-	contactAddress.setDisplayName(getUsername());
-	ContactHeader contactHeader = headerFactory
-		.createContactHeader(contactAddress);
-	request.addHeader(contactHeader);
-
-	ContentTypeHeader contentTypeHeader = headerFactory
-		.createContentTypeHeader("text", "plain");
-	request.setContent(message, contentTypeHeader);
-
-	sipProvider.sendRequest(request);
-    }*/
-
+    String via,from,to,callId,cSeq,contact,allow,maxForwards,
+            userAgent,supported,contentLength;
     
-    /** This method is called by the SIP stack when a response arrives. */
-    public void processResponse(ResponseEvent evt) {
-	Response response = evt.getResponse();
-	int status = response.getStatusCode();
-
-	System.out.println(response);
-	
+    public Request(String via,String from,String to,String callId,String cSeq,String contact,String allow
+    ,String maxForwards,String userAgent,String supported,String contentLength)
+    {
+        this.via = via;
+        this.from = from;
+        this.to = to;
+        this.callId = callId;
+        this.cSeq = cSeq;
+        this.contact = contact;
+        this.allow = allow;
+        this.maxForwards = maxForwards;
+        this.userAgent = userAgent;
+        this.supported = supported;
+        this.contentLength = contentLength;
     }
-
-    /** 
-     * This method is called by the SIP stack when a new request arrives. 
-     */
-    public void processRequest(RequestEvent evt) {
-	Request req = evt.getRequest();
-
-	String method = req.getMethod();
-	System.out.println(req);
+    public Request()
+    {
+        this.allow = "";
+        this.cSeq = "";
+        this.callId = "";
+        this.contact = "";
+        this.contentLength = "";
+        this.from = "";
+        this.maxForwards = "";
+        this.supported = "";
+        this.to = "";
+        this.userAgent = "";
+        this.via = "";
     }
+}
 
-
-    /** 
-     * This method is called by the SIP stack when there's no answer 
-     * to a message. Note that this is treated differently from an error
-     * message. 
-     */
-    public void processTimeout(TimeoutEvent evt) {
-	//messageProcessor
-		//.processError("Previous message not sent: " + "timeout");
+class registerRequest extends Request
+{
+    String allowEvents,expires;
+    
+    public registerRequest(String via,String from,String to,String callId,String cSeq,String contact,String allow
+    ,String maxForwards,String allowEvents,String userAgent,String supported,String expires,
+    String contentLength)
+    {
+        this.via = via;
+        this.from = from;
+        this.to = to;
+        this.callId = callId;
+        this.cSeq = cSeq;
+        this.contact = contact;
+        this.allow = allow;
+        this.maxForwards = maxForwards;
+        this.allowEvents = allowEvents;
+        this.userAgent = userAgent;
+        this.supported = supported;
+        this.expires = expires;
+        this.contentLength = contentLength;
     }
-
-    /** 
-     * This method is called by the SIP stack when there's an asynchronous
-     * message transmission error.  
-     */
-    public void processIOException(IOExceptionEvent evt) {
-	//messageProcessor.processError("Previous message not sent: "
-		//+ "I/O Exception");
+    public registerRequest()
+    {
+        super();
+        this.allowEvents = "";
+        this.expires = "";      
     }
-
-    /** 
-     * This method is called by the SIP stack when a dialog (session) ends. 
-     */
-    public void processDialogTerminated(DialogTerminatedEvent evt) {
+    public String OK_200()
+    {
+        String ok_res = "SIP/2.0 200 OK\r\n";
+        
+        ok_res = ok_res + "Via: " + via + "\r\n";
+        ok_res = ok_res + "From: " + from + "\r\n";
+        ok_res = ok_res + "To: " + to + "\r\n";
+        ok_res = ok_res + "Call-ID: " + callId + "\r\n";
+        ok_res = ok_res + "CSeq: " + cSeq + "\r\n";
+        ok_res = ok_res + "Contact: " + contact + "\r\n";
+        ok_res = ok_res + "Allow: " + allow + "\r\n";
+        ok_res = ok_res + "Max-Forwards: " + maxForwards + "\r\n";
+        ok_res = ok_res + "Allow-Events: " + allowEvents + "\r\n";
+        ok_res = ok_res + "User-Agent: " + userAgent + "\r\n";
+        ok_res = ok_res + "Supported: " + supported + "\r\n";
+        ok_res = ok_res + "Expires: " + expires + "\r\n";
+        ok_res = ok_res + "Content-Length: " + contentLength + "\r\n";
+        
+        ok_res = ok_res + "\r\n";
+        return ok_res;
     }
+}
 
-    /** 
-     * This method is called by the SIP stack when a transaction ends. 
-     */
-    public void processTransactionTerminated(TransactionTerminatedEvent evt) {
+class inviteRequest extends Request
+{
+    String contentType,pEarlyMedia,prefferedIdentity,contentLength;
+    String v,o,s,c,t,m;
+    ArrayList a;
+    
+    public inviteRequest()
+    {
+        super();
+        this.contentType = "";
+        this.contentLength = "";
+        this.pEarlyMedia = "";
+        this.prefferedIdentity = "";
+        
+        this.v = "";
+        this.c = "";
+        this.m = "";
+        this.o = "";
+        this.s = "";
+        this.t = "";
+        
+        a = new ArrayList();
     }
-
-    /*public String getHost() {
-	int port = sipProvider.getListeningPoint().getPort();
-	String host = sipStack.getIPAddress();
-	return host;
+    public String TRYING_100()
+    {
+        String trying_res = "SIP/2.0 100 TRYING\r\n";
+        
+        trying_res = trying_res + "Via: " + via + ";recieved=192.168.43.81" +"\r\n";
+        trying_res = trying_res + "From: " + from + "\r\n";
+        trying_res = trying_res + "To: " + to + "\r\n";
+        trying_res = trying_res + "Call-ID: " + callId + "\r\n";
+        trying_res = trying_res + "CSeq: " + cSeq + "\r\n";
+        //trying_res = trying_res + "Contact: " + contact + "\r\n";
+        trying_res = trying_res + "Allow: " + allow + "\r\n";
+        //trying_res = trying_res + "Max-Forwards: " + maxForwards + "\r\n";
+        trying_res = trying_res + "User-Agent: " + userAgent + "\r\n";
+        trying_res = trying_res + "Supported: " + supported + "\r\n";
+        trying_res = trying_res + "Content-Length: 0" + "\r\n";
+        
+        trying_res = trying_res + "\r\n";
+        return trying_res;
     }
-
-    public int getPort() {
-	int port = sipProvider.getListeningPoint().getPort();
-	return port;
-    }
-
-    public String getUsername() {
-	return username;
-    }
-
-    public void setUsername(String newUsername) {
-	username = newUsername;
-    }
-
-    public MessageProcessor getMessageProcessor() {
-	return messageProcessor;
-    }
-
-    public void setMessageProcessor(MessageProcessor newMessageProcessor) {
-	messageProcessor = newMessageProcessor;
-    }*/
-
 }
