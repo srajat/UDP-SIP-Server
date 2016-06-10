@@ -155,6 +155,26 @@ public class UDPServer
                 p.setPort(clientPort);
                 p.setData(send);
                 socket.send(p);
+                
+                byte[] send1 = i.RINGING_180().getBytes();
+                DatagramPacket p1 = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                p1.setAddress(clientAddress);
+                p1.setPort(clientPort);
+                p1.setData(send1);
+                socket.send(p1);
+                
+                System.out.print("Call coming from "+i.contact+" . Pick up??");
+                String pickup = br.readLine();
+                if("y".equals(pickup))
+                {
+                    //System.out.println(i.OK_200(line1, servPort));
+                    byte[] send2 = i.OK_200(line1,servPort).getBytes();
+                    DatagramPacket p2 = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                    p2.setAddress(clientAddress);
+                    p2.setPort(clientPort);
+                    p2.setData(send2);
+                    socket.send(p2);
+                }
             }
             
             packet.setLength(ECHOMAX);
@@ -276,7 +296,7 @@ class inviteRequest extends Request
     {
         String trying_res = "SIP/2.0 100 TRYING\r\n";
         
-        trying_res = trying_res + "Via: " + via + ";recieved=192.168.43.81" +"\r\n";
+        trying_res = trying_res + "Via: " + via + ";recieved="+ exractIp(c) +"\r\n";
         trying_res = trying_res + "From: " + from + "\r\n";
         trying_res = trying_res + "To: " + to + "\r\n";
         trying_res = trying_res + "Call-ID: " + callId + "\r\n";
@@ -291,4 +311,94 @@ class inviteRequest extends Request
         trying_res = trying_res + "\r\n";
         return trying_res;
     }
+
+    private String exractIp(String str) 
+    {
+        return str.substring(str.lastIndexOf(" ")+1, str.length());
+    }
+    
+    public String RINGING_180()
+    {
+        String ring_res = "SIP/2.0 180 RINGING\r\n";
+        
+        ring_res = ring_res + "Via: " + via + ";recieved="+ exractIp(c) +"\r\n";
+        ring_res = ring_res + "From: " + from + "\r\n";
+        ring_res = ring_res + "To: " + to + "\r\n";
+        ring_res = ring_res + "Call-ID: " + callId + "\r\n";
+        ring_res = ring_res + "CSeq: " + cSeq + "\r\n";
+        //ring_res = ring_res + "Contact: " + contact + "\r\n";
+        ring_res = ring_res + "Allow: " + allow + "\r\n";
+        //ring_res = ring_res + "Max-Forwards: " + maxForwards + "\r\n";
+        ring_res = ring_res + "User-Agent: " + userAgent + "\r\n";
+        ring_res = ring_res + "Supported: " + supported + "\r\n";
+        ring_res = ring_res + "Content-Length: 0" + "\r\n";
+        
+        ring_res = ring_res + "\r\n";
+        return ring_res;
+    }
+    public String OK_200(String line1,int servPort)
+    {
+        String ok_res = "SIP/2.0 200 OK\r\n";
+        
+        ok_res = ok_res + "Via: " + via + ";recieved="+ exractIp(c) +"\r\n";
+        ok_res = ok_res + "From: " + from + "\r\n";
+        ok_res = ok_res + "To: " + to + "\r\n";
+        ok_res = ok_res + "Call-ID: " + callId + "\r\n";
+        ok_res = ok_res + "CSeq: " + cSeq + "\r\n";
+        ok_res = ok_res + "Contact: " + extractContact(line1,servPort) + "\r\n";
+        ok_res = ok_res + "Content-Type: " + contentType + "\r\n";
+        ok_res = ok_res + "Allow: " + allow + "\r\n";
+        //ok_res = ok_res + "Max-Forwards: " + maxForwards + "\r\n";
+        ok_res = ok_res + "User-Agent: " + userAgent + "\r\n";
+        ok_res = ok_res + "Supported: " + supported + "\r\n";
+        
+        String body_res = "";
+        body_res = body_res + "v=" + v + "\r\n";
+        body_res = body_res + "o=" + owner(line1,o) + "\r\n";
+        body_res = body_res + "s=" + s + "\r\n";
+        body_res = body_res + "c=" + connect(line1) + "\r\n";
+        body_res = body_res + "t=" + t + "\r\n";
+        body_res = body_res + "m=" + mediaAndAttribute(m,servPort) + "\r\n";
+        int len = body_res.getBytes().length;
+        
+        ok_res = ok_res + "Content-Length: " +len+ "\r\n";  
+        ok_res = ok_res + "\r\n";
+        
+        ok_res = ok_res + body_res;
+        return ok_res;
+    }
+
+    private String extractContact(String line1, int servPort) {
+        String ss = line1.substring(7,line1.lastIndexOf(" "));
+        String sss = "<"+ss+":"+servPort+">";
+        
+        return sss;
+    }
+
+    private String owner(String line1,String o) {
+        String ss = o.substring(0, o.lastIndexOf(" "));
+        ss = ss + " ";
+        ss = ss + line1.substring(line1.indexOf("@")+1,line1.lastIndexOf(" "));
+        
+        return ss;
+        
+    }
+
+    private String connect(String line1) {
+        return "IN IP4 " + line1.substring(line1.indexOf("@")+1,line1.lastIndexOf(" "));
+    }
+
+    private String mediaAndAttribute(String m, int servPort) {
+        String ss = "audio " + (servPort+3) + " ";
+        ss = ss + m.substring(m.indexOf("RTP"), m.length()) + "\r\n";
+        
+        for(int i=0;i<a.size();i++)
+        {
+            ss = ss + "a=";
+            ss = ss + a.get(i);
+            ss = ss + "\r\n";
+        }
+        return ss;
+    }
+
 }
