@@ -163,7 +163,7 @@ public class UDPServer
                 p1.setData(send1);
                 socket.send(p1);
                 
-                System.out.print("Call coming from "+i.contact+" . Pick up??");
+                System.out.print("Call coming from "+i.contact+" . Pick up?? (y) or (n): ");
                 String pickup = br.readLine();
                 if("y".equals(pickup))
                 {
@@ -182,6 +182,9 @@ public class UDPServer
     }
     
 }
+
+
+
 class Request
 {
     String via,from,to,callId,cSeq,contact,allow,maxForwards,
@@ -217,6 +220,9 @@ class Request
         this.via = "";
     }
 }
+
+
+
 
 class registerRequest extends Request
 {
@@ -268,6 +274,9 @@ class registerRequest extends Request
         return ok_res;
     }
 }
+
+
+
 
 class inviteRequest extends Request
 {
