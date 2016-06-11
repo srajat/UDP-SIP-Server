@@ -167,8 +167,8 @@ public class UDPServer
                 
                 if(!currentInvites.containsKey(i.to))
                 {
-                    System.out.print("Call coming from "+i.contact+" . 4 seconds to Pick up?? (y) or (n): ");
-                    int wait = 4;
+                    System.out.print("Call coming from "+i.contact+" . 5 seconds to Pick up:: (y) or (n): ");
+                    int wait = 5;
                     long startTime = System.currentTimeMillis();
                     while((System.currentTimeMillis() - startTime < wait*1000) && !br.ready()) {}
                     String pickup = "";
@@ -269,6 +269,48 @@ public class UDPServer
                 }
             }
             
+            if("SIP/2.0".equals(typeOfMsg) && "200".equals(line1.substring(line1.indexOf(" ")+1,line1.lastIndexOf(" "))))
+            {
+                okRequest r = new okRequest();
+                String feildName = "";
+                String nextLine = "";
+                while(st.hasMoreTokens())
+                {
+                    nextLine = st.nextToken();
+                    feildName = nextLine.substring(0,nextLine.indexOf(":"));
+                    if("Via".equals(feildName))
+                        r.via = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("From".equals(feildName))
+                        r.from = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("To".equals(feildName))
+                        r.to = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Call-ID".equals(feildName))
+                        r.callId = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("CSeq".equals(feildName))
+                        r.cSeq = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Contact".equals(feildName))
+                        r.contact = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    //else if("Allow".equals(feildName))
+                        //r.allow = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    //else if("Max-Forwards".equals(feildName))
+                        //r.maxForwards = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    //else if("User-Agent".equals(feildName))
+                        //r.userAgent = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    //else if("Supported".equals(feildName))
+                        //r.supported = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    
+                    else if("Content-Length".equals(feildName))
+                        r.contentLength = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                }
+                
+                if("1 BYE".equals(r.cSeq))
+                {
+                    currentInvites.remove(r.from);
+                }
+                
+                for(int i=0;i<currentInvites.size();i++)
+                    System.out.println(currentInvites.toString());
+            }
             packet.setLength(ECHOMAX);
         }
     }
@@ -566,7 +608,7 @@ class byeResponse extends Request
         bye_res = bye_res + "To: " + i.from + "\r\n";
         bye_res = bye_res + "Call-ID: " + i.callId + "\r\n";
         bye_res = bye_res + "CSeq: 1 BYE\r\n";
-        System.out.println(i.to);
+        //System.out.println(i.to);
         bye_res = bye_res + "Contact: " + i.to.substring(0, i.to.indexOf(">")) +":5060>" + "\r\n";
         //bye_res = bye_res + "Allow: " + c.allow + "\r\n";
         bye_res = bye_res + "Max-Forwards: " + i.maxForwards + "\r\n";
@@ -580,4 +622,12 @@ class byeResponse extends Request
         return bye_res;
     }
     
+}
+
+class okRequest extends Request
+{
+    okRequest()
+    {
+        super();
+    }
 }
