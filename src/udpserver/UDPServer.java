@@ -167,17 +167,28 @@ public class UDPServer
                 
                 if(!currentInvites.containsKey(i.to))
                 {
-                    System.out.print("Call coming from "+i.contact+" . Pick up?? (y) or (n): ");
-                    String pickup = br.readLine();
-                    if("y".equals(pickup))
+                    System.out.print("Call coming from "+i.contact+" . 4 seconds to Pick up?? (y) or (n): ");
+                    int wait = 4;
+                    long startTime = System.currentTimeMillis();
+                    while((System.currentTimeMillis() - startTime < wait*1000) && !br.ready()) {}
+                    String pickup = "";
+                    if(br.ready())
                     {
-                        //System.out.println(i.OK_200(line1, servPort));
-                        byte[] send2 = i.OK_200(line1,servPort).getBytes();
-                        DatagramPacket p2 = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
-                        p2.setAddress(clientAddress);
-                        p2.setPort(clientPort);
-                        p2.setData(send2);
-                        socket.send(p2);
+                        pickup = br.readLine();
+                        if("y".equals(pickup))
+                        {
+                            //System.out.println(i.OK_200(line1, servPort));
+                            byte[] send2 = i.OK_200(line1,servPort).getBytes();
+                            DatagramPacket p2 = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                            p2.setAddress(clientAddress);
+                            p2.setPort(clientPort);
+                            p2.setData(send2);
+                            socket.send(p2);
+                        }
+                    }
+                    else
+                    {
+                        System.out.println("Call not Picked up!!");
                     }
                 }
                 if(!currentInvites.containsKey(i.to))
