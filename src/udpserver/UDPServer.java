@@ -10,11 +10,13 @@ package udpserver;
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.StringTokenizer;
 
 public class UDPServer
 {
     private static final int ECHOMAX = 1024;
+    private static HashMap<String,String> currentInvites = new HashMap<String,String>();
     
     public static void main(String[] args) throws IOException
     {           
@@ -163,17 +165,81 @@ public class UDPServer
                 p1.setData(send1);
                 socket.send(p1);
                 
-                System.out.print("Call coming from "+i.contact+" . Pick up?? (y) or (n): ");
-                String pickup = br.readLine();
-                if("y".equals(pickup))
+                if(!currentInvites.containsKey(i.to))
                 {
-                    //System.out.println(i.OK_200(line1, servPort));
-                    byte[] send2 = i.OK_200(line1,servPort).getBytes();
-                    DatagramPacket p2 = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
-                    p2.setAddress(clientAddress);
-                    p2.setPort(clientPort);
-                    p2.setData(send2);
-                    socket.send(p2);
+                    System.out.print("Call coming from "+i.contact+" . Pick up?? (y) or (n): ");
+                    String pickup = br.readLine();
+                    if("y".equals(pickup))
+                    {
+                        //System.out.println(i.OK_200(line1, servPort));
+                        byte[] send2 = i.OK_200(line1,servPort).getBytes();
+                        DatagramPacket p2 = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                        p2.setAddress(clientAddress);
+                        p2.setPort(clientPort);
+                        p2.setData(send2);
+                        socket.send(p2);
+                    }
+                }
+                if(!currentInvites.containsKey(i.to))
+                    currentInvites.put(i.to,i.cSeq);
+                
+                //for(int j=0;j<currentInvites.size();j++)
+                    //System.out.println(currentInvites.get(j));
+            }
+            if("CANCEL".equals(typeOfMsg))
+            {
+                cancelRequest c = new cancelRequest();
+                String feildName = "";
+                String nextLine = "";
+                while(st.hasMoreTokens())
+                {
+                    nextLine = st.nextToken();
+                    feildName = nextLine.substring(0,nextLine.indexOf(":"));
+                    if("Via".equals(feildName))
+                        c.via = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("From".equals(feildName))
+                        c.from = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("To".equals(feildName))
+                        c.to = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Call-ID".equals(feildName))
+                        c.callId = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("CSeq".equals(feildName))
+                        c.cSeq = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Allow".equals(feildName))
+                        c.allow = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Max-Forwards".equals(feildName))
+                        c.maxForwards = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("User-Agent".equals(feildName))
+                        c.userAgent = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Content-Length".equals(feildName))
+                        c.contentLength = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                }
+                
+                String whoToCancel = line1.substring(line1.indexOf(" ")+1,line1.lastIndexOf(" "));
+                whoToCancel = "<"+whoToCancel+">";
+                
+                if(currentInvites.containsKey(whoToCancel))
+                {
+                    
+                    
+                    //send ok back
+                    //System.out.println(c.OK_200());
+                    byte[] send = c.OK_200().getBytes();
+                    DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                    p.setAddress(clientAddress);
+                    p.setPort(clientPort);
+                    p.setData(send);
+                    socket.send(p);
+
+                    //send 487 terminated
+                    byte[] send1 = requestTerminatedResponse.REQUESTTERMINATED_487(c,currentInvites.get(whoToCancel)).getBytes();
+                    DatagramPacket p1 = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                    p1.setAddress(clientAddress);
+                    p1.setPort(clientPort);
+                    p1.setData(send1);
+                    socket.send(p1);
+                    
+                    currentInvites.remove(whoToCancel);
                 }
             }
             
@@ -410,4 +476,55 @@ class inviteRequest extends Request
         return ss;
     }
 
+}
+
+class cancelRequest extends Request
+{
+    cancelRequest()
+    {
+        super();
+    }
+    
+    public String OK_200()
+    {
+        String ok_res = "SIP/2.0 200 OK\r\n";
+        
+        ok_res = ok_res + "Via: " + via + "\r\n";
+        ok_res = ok_res + "From: " + from + "\r\n";
+        ok_res = ok_res + "To: " + to + "\r\n";
+        ok_res = ok_res + "Call-ID: " + callId + "\r\n";
+        ok_res = ok_res + "CSeq: " + cSeq + "\r\n";
+        ok_res = ok_res + "Allow: " + allow + "\r\n";
+        ok_res = ok_res + "Max-Forwards: " + maxForwards + "\r\n";
+        ok_res = ok_res + "User-Agent: " + userAgent + "\r\n";
+        ok_res = ok_res + "Content-Length: " + contentLength + "\r\n";
+        
+        ok_res = ok_res + "\r\n";
+        return ok_res;
+    }
+}
+
+class requestTerminatedResponse
+{
+    public static String REQUESTTERMINATED_487(cancelRequest c,String inviteSeq)
+    {
+        String term_res = "SIP/2.0 487 Request Terminated\r\n";
+        
+        term_res = term_res + "Via: " + c.via + "\r\n";
+        term_res = term_res + "From: " + c.from + "\r\n";
+        term_res = term_res + "To: " + c.to + "\r\n";
+        term_res = term_res + "Call-ID: " + c.callId + "\r\n";
+        term_res = term_res + "CSeq: " + inviteSeq + "\r\n";
+        
+        term_res = term_res + "Allow: " + c.allow + "\r\n";
+        term_res = term_res + "Max-Forwards: " + c.maxForwards + "\r\n";
+      
+        term_res = term_res + "User-Agent: " + c.userAgent + "\r\n";
+        
+        
+        term_res = term_res + "Content-Length: 0\r\n";
+        
+        term_res = term_res + "\r\n";
+        return term_res;
+    }
 }
