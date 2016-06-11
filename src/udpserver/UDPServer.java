@@ -190,6 +190,21 @@ public class UDPServer
                     {
                         System.out.println("Call not Picked up!!");
                     }
+                    
+                    if("y".equals(pickup))
+                    {
+                        System.out.print("Enter 'n' to put down the phone:: ");
+                        String putDown = br.readLine();
+                        if("n".equals(putDown))
+                        {
+                            byte[] send3 = byeResponse.BYE(i,clientPort).getBytes();
+                            DatagramPacket p3 = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                            p3.setAddress(clientAddress);
+                            p3.setPort(clientPort);
+                            p3.setData(send3);
+                            socket.send(p3);
+                        }
+                    }
                 }
                 if(!currentInvites.containsKey(i.to))
                     currentInvites.put(i.to,i.cSeq);
@@ -538,4 +553,31 @@ class requestTerminatedResponse
         term_res = term_res + "\r\n";
         return term_res;
     }
+}
+
+class byeResponse extends Request
+{
+    public static String BYE(inviteRequest i,int clientPort)
+    {
+        String bye_res = "BYE sip:" + i.from.substring(i.from.indexOf("p")+2,i.from.indexOf(">")) + ":"+ clientPort + " SIP/2.0\r\n";
+        
+        bye_res = bye_res + "Via: " + i.via + "\r\n";
+        bye_res = bye_res + "From: " + i.to + "\r\n";
+        bye_res = bye_res + "To: " + i.from + "\r\n";
+        bye_res = bye_res + "Call-ID: " + i.callId + "\r\n";
+        bye_res = bye_res + "CSeq: 1 BYE\r\n";
+        System.out.println(i.to);
+        bye_res = bye_res + "Contact: " + i.to.substring(0, i.to.indexOf(">")) +":5060>" + "\r\n";
+        //bye_res = bye_res + "Allow: " + c.allow + "\r\n";
+        bye_res = bye_res + "Max-Forwards: " + i.maxForwards + "\r\n";
+      
+        bye_res = bye_res + "User-Agent: " + i.userAgent + "\r\n";
+        
+        
+        bye_res = bye_res + "Content-Length: 0\r\n";
+        
+        bye_res = bye_res + "\r\n";
+        return bye_res;
+    }
+    
 }
