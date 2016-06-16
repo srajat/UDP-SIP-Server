@@ -633,6 +633,11 @@ public class UDPServer
                 p.setPort(Integer.parseInt(fwdPort.trim()));
                 p.setData(send);
                 socket.send(p);
+                
+                //remove from CURRENTCALLS
+                String callId = r.callId.substring(0,r.callId.indexOf("@"));
+                if(CURRENTCALLS.containsKey(callId))
+                    CURRENTCALLS.remove(callId);
             }
            
                 
