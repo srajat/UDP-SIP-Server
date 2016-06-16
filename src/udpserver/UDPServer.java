@@ -219,7 +219,7 @@ public class UDPServer
                 callDetails cd = new callDetails();
                 cd.caller = callerNumber;
                 cd.called = calleeNumber;
-                cd.cSeq = r.cSeq;
+                
                 String callId = r.callId.substring(0, r.callId.indexOf("@"));
                 CURRENTCALLS.put(callId, cd);
                 

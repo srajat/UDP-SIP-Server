@@ -13,12 +13,12 @@ public class callDetails
 {
     String caller;
     String called;
-    String cSeq;
+    
     
     callDetails()
     {
         caller = "";
         called = "";
-        cSeq = "";
+        
     }
 }
