@@ -14,21 +14,6 @@ public class Request
     String via,from,to,callId,cSeq,contact,allow,maxForwards,
             userAgent,supported,contentLength;
     
-    public Request(String via,String from,String to,String callId,String cSeq,String contact,String allow
-    ,String maxForwards,String userAgent,String supported,String contentLength)
-    {
-        this.via = via;
-        this.from = from;
-        this.to = to;
-        this.callId = callId;
-        this.cSeq = cSeq;
-        this.contact = contact;
-        this.allow = allow;
-        this.maxForwards = maxForwards;
-        this.userAgent = userAgent;
-        this.supported = supported;
-        this.contentLength = contentLength;
-    }
     public Request()
     {
         this.allow = "";
