@@ -13,7 +13,7 @@ import java.util.ArrayList;
  */
 public class inviteRequest extends Request
 {
-    String contentType,pEarlyMedia,prefferedIdentity,contentLength;
+    String contentType,pEarlyMedia,prefferedIdentity;
     String v,o,s,c,t,m;
     ArrayList<String> a,via;
     
@@ -21,7 +21,6 @@ public class inviteRequest extends Request
     {
         super();
         this.contentType = "";
-        this.contentLength = "";
         this.pEarlyMedia = "";
         this.prefferedIdentity = "";
         
@@ -72,9 +71,6 @@ public class inviteRequest extends Request
         
         for(int in=0;in<via.size();in++)
             fwd_res = fwd_res + "Via: " + via.get(in) + "\r\n";
-        
-        //add this server's Route Tag
-        //fwd_res = fwd_res + "Route: <sip:"+servIp+";lr>\r\n";
         
         fwd_res = fwd_res + "From: " + from + "\r\n";
         fwd_res = fwd_res + "To: " + to + "\r\n";

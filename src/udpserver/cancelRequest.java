@@ -11,16 +11,15 @@ import java.util.ArrayList;
  *
  * @author bloodphoenix
  */
-public class ackRequest extends Request
+public class cancelRequest extends Request
 {
     ArrayList<String> via;
-    ackRequest()
+    cancelRequest()
     {
         super();
         via = new ArrayList<>();
     }
-    
-    public String forwardAck(String line1,String servIp,int servPort)
+    public String forwardCancel(String line1,String servIp,int servPort)
     {
         String fwd_res = line1 + "\r\n";
         
@@ -39,18 +38,13 @@ public class ackRequest extends Request
         
         fwd_res = fwd_res + "From: " + from + "\r\n";
         fwd_res = fwd_res + "To: " + to + "\r\n";
-        fwd_res = fwd_res + "Call-ID: " + callId + "\r\n";
+        fwd_res = fwd_res+ "Call-ID: " + callId + "\r\n";
         fwd_res = fwd_res + "CSeq: " + cSeq + "\r\n";
-        //fwd_res = fwd_res + "Contact: " + contact + "\r\n";
-        //fwd_res = fwd_res + "Allow: " + allow + "\r\n";
-        fwd_res = fwd_res + "Contact: " + contact + "\r\n";
-        //fwd_res = fwd_res + "Max-Forwards: " + (Integer.parseInt(maxForwards.trim())-1) + "\r\n";
-        //fwd_res = fwd_res + "User-Agent: " + userAgent + "\r\n";
-        //fwd_res = fwd_res + "Supported: " + supported + "\r\n";
         
+        fwd_res = fwd_res + "Max-Forwards: " + (Integer.parseInt(maxForwards.trim())-1) + "\r\n";
+        fwd_res = fwd_res + "User-Agent: " + userAgent + "\r\n";
         
-        fwd_res = fwd_res + "Content-Length: 0\r\n\r\n";
-        
+        fwd_res = fwd_res + "Content-Length: 0" + "\r\n\r\n";
         
         return fwd_res;
     }

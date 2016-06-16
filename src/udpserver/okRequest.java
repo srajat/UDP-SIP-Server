@@ -20,11 +20,14 @@ public class okRequest extends inviteRequest
     {
         String fwd_res = "SIP/2.0 200 OK\r\n";
         
-        if(!cSeq.contains("BYE"))
+        if(via.get(0).contains(","))
         {
             String modifiedVia = via.get(0).substring(via.get(0).indexOf(",")+1,via.get(0).length());
             via.set(0,modifiedVia);
         }
+        else
+            via.remove(0);
+        
         
         //add via feilds
         for(int in=0;in<via.size();in++)
@@ -35,16 +38,18 @@ public class okRequest extends inviteRequest
         fwd_res = fwd_res+ "Call-ID: " + callId + "\r\n";
         fwd_res = fwd_res + "CSeq: " + cSeq + "\r\n";
         
-        String modifiedContact = contact.substring(0,contact.indexOf("@")+1)+ servIp+">"; 
-        fwd_res = fwd_res + "Contact: " + modifiedContact + "\r\n";
-        
+        if(cSeq.contains("CANCEL"))
+        {
+            String modifiedContact = contact.substring(0,contact.indexOf("@")+1)+ servIp+">"; 
+            fwd_res = fwd_res + "Contact: " + modifiedContact + "\r\n";
+        }
         //fwd_res = fwd_res + "Allow: " + allow + "\r\n";
         //fwd_res = fwd_res + "Max-Forwards: " + (Integer.parseInt(maxForwards.trim())-1) + "\r\n";
         //fwd_res = fwd_res + "User-Agent: " + userAgent + "\r\n";
         //fwd_res = fwd_res + "Supported: " + supported + "\r\n";
         fwd_res = fwd_res + "Content-Length: " + contentLength + "\r\n\r\n";
         
-        if(!cSeq.contains("BYE"))
+        if(!cSeq.contains("BYE") && !cSeq.contains("CANCEL"))
         {
             fwd_res = fwd_res + "v=" + v + "\r\n";
             fwd_res = fwd_res + "o=" + o + "\r\n";

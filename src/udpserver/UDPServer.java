@@ -17,7 +17,7 @@ public class UDPServer
 {
     private static final int ECHOMAX = 2048;
     private static HashMap<String,String> REGISTERED = new HashMap<String,String>();
-    private static HashMap<String,String> NOWCALLING = new HashMap<String,String>();
+    private static HashMap<String,callDetails> CURRENTCALLS = new HashMap<String,callDetails>();
     
     public static void main(String[] args) throws IOException
     {           
@@ -117,7 +117,8 @@ public class UDPServer
                     System.out.println("Phone "+number+" is Successfully UNREGISTERED.");
                     REGISTERED.remove(number);
                 }
-                      
+                
+                //send OK response to caller
                 byte[] send = r.OK_200().getBytes();
                 DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p.setAddress(clientAddress);
@@ -211,9 +212,18 @@ public class UDPServer
                 byte[] send1 = r.forwardInvite(line1, servIp, servPort).getBytes();
                 DatagramPacket p1 = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p1.setAddress(InetAddress.getByName(calleeIp));
-                p1.setPort(Integer.parseInt(calleePort));
+                p1.setPort(Integer.parseInt(calleePort.trim()));
                 p1.setData(send1);
                 socket.send(p1);
+                
+                //add details to CURRENTCALLS
+                callDetails cd = new callDetails();
+                cd.caller = callerNumber;
+                cd.called = calleeNumber;
+                cd.cSeq = r.cSeq;
+                String callId = r.callId.substring(0, r.callId.indexOf("@"));
+                CURRENTCALLS.put(callId, cd);
+                
             }
             
             if("SIP/2.0 180 Ringing".equals(line1))
@@ -339,7 +349,7 @@ public class UDPServer
                 System.out.println("OK forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
                 
                 //forward OK
-                System.out.println(r.forwardOk(servIp));
+                //System.out.println(r.forwardOk(servIp));
                 byte[] send = r.forwardOk(servIp).getBytes();
                 DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p.setAddress(InetAddress.getByName(fwdIp));
@@ -446,8 +456,126 @@ public class UDPServer
                 System.out.println("BYE forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
                 
                 //Forward BYE
-                System.out.println(r.forwardBye(line1, servIp, servPort));
+                //System.out.println(r.forwardBye(line1, servIp, servPort));
                 byte[] send = r.forwardBye(line1, servIp, servPort).getBytes();
+                DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                p.setAddress(InetAddress.getByName(fwdIp));
+                p.setPort(Integer.parseInt(fwdPort.trim()));
+                p.setData(send);
+                socket.send(p);
+                
+                //remove this call from CURRENTCALLS
+                String callId = r.callId.substring(0, r.callId.indexOf("@"));
+                
+                if(CURRENTCALLS.containsKey(callId))
+                {
+                    System.out.println("The call from "+CURRENTCALLS.get(callId).caller+" to "+CURRENTCALLS.get(callId).called+" has been ENDED.");
+                    CURRENTCALLS.remove(callId);
+                }
+            }
+            
+            if("CANCEL".equals(typeOfMsg))
+            {
+                cancelRequest r = new cancelRequest();
+                String feildName = "";
+                String nextLine = "";
+                while(st.hasMoreTokens())
+                {
+                    nextLine = st.nextToken();
+                    feildName = nextLine.substring(0,nextLine.indexOf(":"));
+                    if("Via".equals(feildName))
+                        r.via.add(nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length()));
+                    else if("From".equals(feildName))
+                        r.from = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("To".equals(feildName))
+                        r.to = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Call-ID".equals(feildName))
+                        r.callId = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("CSeq".equals(feildName))
+                        r.cSeq = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Contact".equals(feildName))
+                        r.contact = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Allow".equals(feildName))
+                        r.allow = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Max-Forwards".equals(feildName))
+                        r.maxForwards = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                  
+                    else if("User-Agent".equals(feildName))
+                        r.userAgent = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Supported".equals(feildName))
+                        r.supported = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                   
+                    else if("Content-Length".equals(feildName))
+                        r.contentLength = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                }
+                
+                //forward to whom
+                String fwdNumber = r.to.substring(r.from.indexOf(":")+1, r.from.indexOf("@"));
+                String fwdIp = extractIpOrPort(REGISTERED.get(fwdNumber),0);
+                String fwdPort = extractIpOrPort(REGISTERED.get(fwdNumber),1);
+                
+                System.out.println("Cancel forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
+                
+                //forward cancel
+                //System.out.println(r.forwardCancel());
+                byte[] send = r.forwardCancel(line1,servIp,servPort).getBytes();
+                DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                p.setAddress(InetAddress.getByName(fwdIp));
+                p.setPort(Integer.parseInt(fwdPort.trim()));
+                p.setData(send);
+                socket.send(p);
+                
+                //remove callDetails
+                String callId = r.callId.substring(0,r.callId.indexOf("@"));
+                if(CURRENTCALLS.containsKey(callId))
+                    CURRENTCALLS.remove(callId);
+            }
+            
+            if("SIP/2.0 487 Request Terminated".equals(line1))
+            {
+                requestTerminatedRequest r = new requestTerminatedRequest();
+                String feildName = "";
+                String nextLine = "";
+                while(st.hasMoreTokens())
+                {
+                    nextLine = st.nextToken();
+                    feildName = nextLine.substring(0,nextLine.indexOf(":"));
+                    if("Via".equals(feildName))
+                        r.via.add(nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length()));
+                    else if("From".equals(feildName))
+                        r.from = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("To".equals(feildName))
+                        r.to = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Call-ID".equals(feildName))
+                        r.callId = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("CSeq".equals(feildName))
+                        r.cSeq = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Contact".equals(feildName))
+                        r.contact = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Allow".equals(feildName))
+                        r.allow = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Max-Forwards".equals(feildName))
+                        r.maxForwards = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                  
+                    else if("User-Agent".equals(feildName))
+                        r.userAgent = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Supported".equals(feildName))
+                        r.supported = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                   
+                    else if("Content-Length".equals(feildName))
+                        r.contentLength = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                }
+                
+                //forward to whom
+                String fwdNumber = r.from.substring(r.from.indexOf(":")+1, r.from.indexOf("@"));
+                String fwdIp = extractIpOrPort(REGISTERED.get(fwdNumber),0);
+                String fwdPort = extractIpOrPort(REGISTERED.get(fwdNumber),1);
+                
+                System.out.println("Request Terminated forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
+                
+                //forward 487
+                //System.out.println(r.forwardrequestTerminated());
+                byte[] send = r.forwardrequestTerminated(line1,servIp,servPort).getBytes();
                 DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p.setAddress(InetAddress.getByName(fwdIp));
                 p.setPort(Integer.parseInt(fwdPort.trim()));
@@ -455,6 +583,57 @@ public class UDPServer
                 socket.send(p);
             }
             
+            if("SIP/2.0 486 Busy here".equals(line1))
+            {
+                requestTerminatedRequest r = new requestTerminatedRequest();
+                String feildName = "";
+                String nextLine = "";
+                while(st.hasMoreTokens())
+                {
+                    nextLine = st.nextToken();
+                    feildName = nextLine.substring(0,nextLine.indexOf(":"));
+                    if("Via".equals(feildName))
+                        r.via.add(nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length()));
+                    else if("From".equals(feildName))
+                        r.from = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("To".equals(feildName))
+                        r.to = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Call-ID".equals(feildName))
+                        r.callId = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("CSeq".equals(feildName))
+                        r.cSeq = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Contact".equals(feildName))
+                        r.contact = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Allow".equals(feildName))
+                        r.allow = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Max-Forwards".equals(feildName))
+                        r.maxForwards = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                  
+                    else if("User-Agent".equals(feildName))
+                        r.userAgent = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                    else if("Supported".equals(feildName))
+                        r.supported = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                   
+                    else if("Content-Length".equals(feildName))
+                        r.contentLength = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
+                }
+                
+                //forward to whom
+                String fwdNumber = r.from.substring(r.from.indexOf(":")+1, r.from.indexOf("@"));
+                String fwdIp = extractIpOrPort(REGISTERED.get(fwdNumber),0);
+                String fwdPort = extractIpOrPort(REGISTERED.get(fwdNumber),1);
+                
+                System.out.println("Busy Here forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
+                
+                //forward 486
+                //System.out.println(r.forwardrequestTerminated());
+                byte[] send = r.forwardrequestTerminated(line1,servIp,servPort).getBytes();
+                DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
+                p.setAddress(InetAddress.getByName(fwdIp));
+                p.setPort(Integer.parseInt(fwdPort.trim()));
+                p.setData(send);
+                socket.send(p);
+            }
            
                 
             packet.setLength(ECHOMAX);

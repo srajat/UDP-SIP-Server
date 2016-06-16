@@ -38,10 +38,10 @@ public class ringingRequest extends Request
         String modifiedContact = contact.substring(0,contact.indexOf("@")+1)+ servIp+">"; 
         fwd_res = fwd_res + "Contact: " + modifiedContact + "\r\n";
         
-        fwd_res = fwd_res + "Allow: " + allow + "\r\n";
+        
         //fwd_res = fwd_res + "Max-Forwards: " + (Integer.parseInt(maxForwards.trim())-1) + "\r\n";
         fwd_res = fwd_res + "User-Agent: " + userAgent + "\r\n";
-        fwd_res = fwd_res + "Supported: " + supported + "\r\n";
+        
         fwd_res = fwd_res + "Content-Length: 0" + "\r\n\r\n";
         
         return fwd_res;
