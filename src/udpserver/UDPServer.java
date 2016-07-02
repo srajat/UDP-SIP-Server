@@ -582,7 +582,7 @@ public class UDPServer
                 socket.send(p);
             }
             
-            if("SIP/2.0 486 Busy here".equals(line1))
+            if(line1.contains("486 Busy"))
             {
                 requestTerminatedRequest r = new requestTerminatedRequest();
                 String feildName = "";
