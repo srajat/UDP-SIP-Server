@@ -531,7 +531,7 @@ public class UDPServer
                     CURRENTCALLS.remove(callId);
             }
             
-            if("SIP/2.0 487 Request Cancelled".equals(line1))   //If message is of type 487
+            if(line1.contains("487 Request"))   //If message is of type 487
             {
                 requestTerminatedRequest r = new requestTerminatedRequest();
                 String feildName = "";
