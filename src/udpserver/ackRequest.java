@@ -1,20 +1,19 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package udpserver;
-
-import java.util.ArrayList;
-
 /**
  *
- * @author bloodphoenix
+ * @author Rajat Saxena & Shivam Dabral & Biwas Bisht
+ * @date 13/Jun/2016
+ * @project UDP_Server
+ * @File ackRequest.java
  */
+import java.util.ArrayList;
+
+
 public class ackRequest extends Request
 {
-    ArrayList<String> via;
-    ackRequest()
+    ArrayList<String> via;  //List of via headers
+    
+    ackRequest()    //constructor
     {
         super();
         via = new ArrayList<>();
@@ -41,17 +40,9 @@ public class ackRequest extends Request
         fwd_res = fwd_res + "To: " + to + "\r\n";
         fwd_res = fwd_res + "Call-ID: " + callId + "\r\n";
         fwd_res = fwd_res + "CSeq: " + cSeq + "\r\n";
-        //fwd_res = fwd_res + "Contact: " + contact + "\r\n";
-        //fwd_res = fwd_res + "Allow: " + allow + "\r\n";
         fwd_res = fwd_res + "Contact: " + contact + "\r\n";
-        //fwd_res = fwd_res + "Max-Forwards: " + (Integer.parseInt(maxForwards.trim())-1) + "\r\n";
-        //fwd_res = fwd_res + "User-Agent: " + userAgent + "\r\n";
-        //fwd_res = fwd_res + "Supported: " + supported + "\r\n";
-        
-        
         fwd_res = fwd_res + "Content-Length: 0\r\n\r\n";
-        
-        
+ 
         return fwd_res;
     }
 }

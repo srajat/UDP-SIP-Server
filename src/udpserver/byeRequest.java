@@ -1,15 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package udpserver;
 
 import java.util.ArrayList;
 
 /**
  *
- * @author bloodphoenix
+ * @author Rajat Saxena & Shivam Dabral & Biwas Bisht
+ * @date 13/Jun/2016
+ * @project UDP_Server
+ * @File byeRequest.java
  */
 public class byeRequest extends Request
 {
@@ -33,7 +31,7 @@ public class byeRequest extends Request
         //add this server's Via tag
         via.add(0,"SIP/2.0/UDP "+servIp+":"+servPort+";branch=z9hG4bK2d4790");
         
-        for(int in=0;in<via.size();in++)
+        for(int in=0;in<via.size();in++)    //add all via headers
             fwd_res = fwd_res + "Via: " + via.get(in) + "\r\n";
        
         
@@ -45,11 +43,8 @@ public class byeRequest extends Request
         String modifiedContact = contact.substring(0,contact.indexOf("@")+1)+ servIp+">"; 
         fwd_res = fwd_res + "Contact: " + modifiedContact + "\r\n";
         
-        //fwd_res = fwd_res + "Content-Type: " + contentType + "\r\n";
-        //fwd_res = fwd_res + "Allow: " + allow + "\r\n";
         fwd_res = fwd_res + "Max-Forwards: " + (Integer.parseInt(maxForwards.trim())-1) + "\r\n";
         fwd_res = fwd_res + "User-Agent: " + userAgent + "\r\n";
-        //fwd_res = fwd_res + "Supported: " + supported + "\r\n";
         fwd_res = fwd_res + "Content-Length: " + contentLength + "\r\n\r\n";
         return fwd_res;
     }

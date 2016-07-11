@@ -1,15 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package udpserver;
 
 import java.util.ArrayList;
 
 /**
  *
- * @author bloodphoenix
+ * @author Rajat Saxena & Shivam Dabral & Biwas Bisht
+ * @date 13/Jun/2016
+ * @project UDP_Server
+ * @File inviteRequest.java
  */
 public class inviteRequest extends Request
 {
@@ -34,7 +32,7 @@ public class inviteRequest extends Request
         a = new ArrayList<>();
         via = new ArrayList<>();
     }
-    public String TRYING_100()
+    public String TRYING_100()      //method to generate trying response
     {
         String trying_res = "SIP/2.0 100 TRYING\r\n";
         
@@ -51,9 +49,7 @@ public class inviteRequest extends Request
         trying_res = trying_res + "To: " + to + "\r\n";
         trying_res = trying_res + "Call-ID: " + callId + "\r\n";
         trying_res = trying_res + "CSeq: " + cSeq + "\r\n";
-        //trying_res = trying_res + "Contact: " + contact + "\r\n";
         trying_res = trying_res + "Allow: " + allow + "\r\n";
-        //trying_res = trying_res + "Max-Forwards: " + maxForwards + "\r\n";
         trying_res = trying_res + "User-Agent: " + userAgent + "\r\n";
         trying_res = trying_res + "Supported: " + supported + "\r\n";
         trying_res = trying_res + "Content-Length: 0" + "\r\n";
@@ -62,7 +58,7 @@ public class inviteRequest extends Request
         return trying_res;
     }
     
-    public String forwardInvite(String line1,String servIp,int servPort)
+    public String forwardInvite(String line1,String servIp,int servPort)    //to generate fwd response
     {
         String fwd_res = line1 + "\r\n";
         
@@ -81,10 +77,8 @@ public class inviteRequest extends Request
         fwd_res = fwd_res + "Contact: " + modifiedContact + "\r\n";
         
         fwd_res = fwd_res + "Content-Type: " + contentType + "\r\n";
-        //fwd_res = fwd_res + "Allow: " + allow + "\r\n";
         fwd_res = fwd_res + "Max-Forwards: " + (Integer.parseInt(maxForwards.trim())-1) + "\r\n";
         fwd_res = fwd_res + "User-Agent: " + userAgent + "\r\n";
-        //fwd_res = fwd_res + "Supported: " + supported + "\r\n";
         fwd_res = fwd_res + "Content-Length: " + contentLength + "\r\n\r\n";
         
         fwd_res = fwd_res + "v=" + v + "\r\n";

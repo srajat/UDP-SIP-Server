@@ -2,9 +2,10 @@ package udpserver;
 
 /**
  *
- * @author Rajat Saxena
+ * @author Rajat Saxena & Shivam Dabral & Biwas Bisht
  * @date 13/Jun/2016
  * @project UDP_Server
+ * @File UDPServer.java
  */
 
 import java.net.*;
@@ -14,42 +15,48 @@ import java.util.StringTokenizer;
 
 public class UDPServer
 {
-    private static final int ECHOMAX = 2048;
+    private static final int ECHOMAX = 2048;    //Stores max length of recieved message in bytes
+    //HashMap of REGISTERED users
     private static HashMap<String,String> REGISTERED = new HashMap<String,String>();
+    //HashMap of Current Calls going on
     private static HashMap<String,callDetails> CURRENTCALLS = new HashMap<String,callDetails>();
     
     public static void main(String[] args) throws IOException
     {           
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        System.out.print("Enter the port of the server: ");
         
+        System.out.print("Enter the port of the server (int): ");
         int servPort = Integer.parseInt(br.readLine());
-        String servIp = "192.168.43.23";
-        //String servIp = "172.210.140.251";
         
+        System.out.print("Enter the IP address of the server (String): ");
+        String servIp = br.readLine();
+        
+        System.out.println("Server Started. Listening for requests....");
+        
+        //Create new packet to recieve into
         DatagramSocket socket = new DatagramSocket(servPort) ;
         DatagramPacket packet = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
        
             
-        for (;;)
+        for (;;)    //Loops infinitely
         {
-            socket.receive(packet);
+            socket.receive(packet);     //Blocks till packet recieved
             
-            InetAddress clientAddress = packet.getAddress();
-            int clientPort = packet.getPort();
+            InetAddress clientAddress = packet.getAddress();    //client's IP
+            int clientPort = packet.getPort();      //client's Port
             
             byte[] arr = new byte[packet.getLength()];
             System.arraycopy(packet.getData(), packet.getOffset(), arr, 0, arr.length);
-            String requestMsg = new String(arr);
+            String requestMsg = new String(arr);    //recieved Message
             
-            //System.out.println(request_msg);
+            
             StringTokenizer st = new StringTokenizer(requestMsg,"\r\n");
-            String line1 = st.nextToken();
+            String line1 = st.nextToken();  //stores first line of recieved message
             String typeOfMsg = line1.substring(0, line1.indexOf(" "));
             
-            if("REGISTER".equals(typeOfMsg))
+            if("REGISTER".equals(typeOfMsg))    //If message is of type Register
             {
-                registerRequest r = new registerRequest();
+                registerRequest r = new registerRequest();  //new register object
                 String feildName = "";
                 String nextLine = "";
                 while(st.hasMoreTokens())
@@ -105,13 +112,13 @@ public class UDPServer
                 boolean isRegistered = REGISTERED.containsKey(number);
                 int expires = Integer.parseInt(r.expires.trim());
                 
-                if(!isRegistered && expires > 0)
+                if(!isRegistered && expires > 0)    //register
                 {
                     System.out.println("Phone "+number+" is Successfully Registered at IP:PORT "+ipPort+" .");
                     REGISTERED.put(number, ipPort);
                 }
                     
-                else if(isRegistered && expires == 0)
+                else if(isRegistered && expires == 0)   //unregister
                 {
                     System.out.println("Phone "+number+" is Successfully UNREGISTERED.");
                     REGISTERED.remove(number);
@@ -127,9 +134,9 @@ public class UDPServer
                 
             }
             
-            if("INVITE".equals(typeOfMsg))
+            if("INVITE".equals(typeOfMsg))  //If message is of type Invite
             {
-                inviteRequest r = new inviteRequest();
+                inviteRequest r = new inviteRequest();  //new Invite object
                 String feildName = "";
                 String nextLine = "";
                 while(st.hasMoreTokens())
@@ -169,7 +176,7 @@ public class UDPServer
                         break;
                     }
                 }
-                while(st.hasMoreTokens())
+                while(st.hasMoreTokens())   //Fill data into SDP part of msg
                 {
                     nextLine = st.nextToken();
                     feildName = nextLine.substring(0,nextLine.indexOf("="));
@@ -225,9 +232,9 @@ public class UDPServer
                 
             }
             
-            if("SIP/2.0 180 Ringing".equals(line1))
+            if("SIP/2.0 180 Ringing".equals(line1))     //If message is of type Ringing
             {
-                ringingRequest r = new ringingRequest();
+                ringingRequest r = new ringingRequest();    //new Ringing Object
                 String feildName = "";
                 String nextLine = "";
                 while(st.hasMoreTokens())
@@ -260,7 +267,7 @@ public class UDPServer
                         r.contentLength = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
                 }
                 
-                //forward ringing to the caller
+                //extract details of who to forward
                 String fwdNumber = r.from.substring(r.from.indexOf(":")+1, r.from.indexOf("@"));
                 String fwdIp = extractIpOrPort(REGISTERED.get(fwdNumber),0);
                 String fwdPort = extractIpOrPort(REGISTERED.get(fwdNumber),1);
@@ -268,7 +275,6 @@ public class UDPServer
                 System.out.println("Ringing forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
                 
                 //forward ringing
-                //System.out.println(r.forwardRinging());
                 byte[] send = r.forwardRinging(servIp).getBytes();
                 DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p.setAddress(InetAddress.getByName(fwdIp));
@@ -277,7 +283,7 @@ public class UDPServer
                 socket.send(p);
             }
             
-            if("SIP/2.0 200 OK".equals(line1))
+            if("SIP/2.0 200 OK".equals(line1))      //If message is of type OK
             {
                 //recieved OK from callee
                 okRequest r = new okRequest();
@@ -340,7 +346,7 @@ public class UDPServer
                         r.a.add(nextLine.substring(nextLine.indexOf("=")+1,nextLine.length()));
                 }
                 
-                //fwd Ok to whom
+                //Find out fwd Ok to whom
                 String fwdNumber = r.from.substring(r.from.indexOf(":")+1, r.from.indexOf("@"));
                 String fwdIp = extractIpOrPort(REGISTERED.get(fwdNumber),0);
                 String fwdPort = extractIpOrPort(REGISTERED.get(fwdNumber),1);
@@ -348,7 +354,6 @@ public class UDPServer
                 System.out.println("OK forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
                 
                 //forward OK
-                //System.out.println(r.forwardOk(servIp));
                 byte[] send = r.forwardOk(servIp).getBytes();
                 DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p.setAddress(InetAddress.getByName(fwdIp));
@@ -358,11 +363,10 @@ public class UDPServer
                 
             }
             
-            if("ACK".equals(typeOfMsg))
+            if("ACK".equals(typeOfMsg))     //If message is of type ACK
             {
-                System.out.println("ACK RECIEVED");
                 
-                ackRequest r = new ackRequest();
+                ackRequest r = new ackRequest();    //New ACK object
                 String feildName = "";
                 String nextLine = "";
                 while(st.hasMoreTokens())
@@ -403,7 +407,6 @@ public class UDPServer
                 System.out.println("ACK forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
                 
                 //forward ack
-                //System.out.println(r.forwardAck(line1, servIp, servPort));
                 byte[] send = r.forwardAck(line1, servIp, servPort).getBytes();
                 DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p.setAddress(InetAddress.getByName(fwdIp));
@@ -412,9 +415,9 @@ public class UDPServer
                 socket.send(p);
             }
             
-            if("BYE".equals(typeOfMsg))
+            if("BYE".equals(typeOfMsg))     //If message is of type Bye
             {
-                byeRequest r = new byeRequest();
+                byeRequest r = new byeRequest();    //new Bye object
                 String feildName = "";
                 String nextLine = "";
                 while(st.hasMoreTokens())
@@ -455,7 +458,6 @@ public class UDPServer
                 System.out.println("BYE forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
                 
                 //Forward BYE
-                //System.out.println(r.forwardBye(line1, servIp, servPort));
                 byte[] send = r.forwardBye(line1, servIp, servPort).getBytes();
                 DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p.setAddress(InetAddress.getByName(fwdIp));
@@ -473,9 +475,9 @@ public class UDPServer
                 }
             }
             
-            if("CANCEL".equals(typeOfMsg))
+            if("CANCEL".equals(typeOfMsg))      //If message is of type Cancel
             {
-                cancelRequest r = new cancelRequest();
+                cancelRequest r = new cancelRequest();  //new Cancel object
                 String feildName = "";
                 String nextLine = "";
                 while(st.hasMoreTokens())
@@ -508,7 +510,7 @@ public class UDPServer
                         r.contentLength = nextLine.substring(nextLine.indexOf(" ")+1,nextLine.length());
                 }
                 
-                //forward to whom
+                //Find forward cancel to whom
                 String fwdNumber = r.to.substring(r.from.indexOf(":")+1, r.from.indexOf("@"));
                 String fwdIp = extractIpOrPort(REGISTERED.get(fwdNumber),0);
                 String fwdPort = extractIpOrPort(REGISTERED.get(fwdNumber),1);
@@ -516,7 +518,6 @@ public class UDPServer
                 System.out.println("Cancel forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
                 
                 //forward cancel
-                //System.out.println(r.forwardCancel());
                 byte[] send = r.forwardCancel(line1,servIp,servPort).getBytes();
                 DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p.setAddress(InetAddress.getByName(fwdIp));
@@ -530,7 +531,7 @@ public class UDPServer
                     CURRENTCALLS.remove(callId);
             }
             
-            if("SIP/2.0 487 Request Terminated".equals(line1))
+            if("SIP/2.0 487 Request Cancelled".equals(line1))   //If message is of type 487
             {
                 requestTerminatedRequest r = new requestTerminatedRequest();
                 String feildName = "";
@@ -573,7 +574,6 @@ public class UDPServer
                 System.out.println("Request Terminated forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
                 
                 //forward 487
-                //System.out.println(r.forwardrequestTerminated());
                 byte[] send = r.forwardrequestTerminated(line1,servIp,servPort).getBytes();
                 DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p.setAddress(InetAddress.getByName(fwdIp));
@@ -582,7 +582,7 @@ public class UDPServer
                 socket.send(p);
             }
             
-            if(line1.contains("486 Busy"))
+            if(line1.contains("486 Busy"))  //If message is of type Busy
             {
                 requestTerminatedRequest r = new requestTerminatedRequest();
                 String feildName = "";
@@ -625,7 +625,6 @@ public class UDPServer
                 System.out.println("Busy Here forwarded to "+fwdNumber+" at IP:PORT "+fwdIp+":"+fwdPort+" .");
                 
                 //forward 486
-                //System.out.println(r.forwardrequestTerminated());
                 byte[] send = r.forwardrequestTerminated(line1,servIp,servPort).getBytes();
                 DatagramPacket p = new DatagramPacket(new byte[ECHOMAX], ECHOMAX);
                 p.setAddress(InetAddress.getByName(fwdIp));

@@ -1,20 +1,19 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package udpserver;
 
 /**
  *
- * @author bloodphoenix
+ * @author Rajat Saxena & Shivam Dabral & Biwas Bisht
+ * @date 13/Jun/2016
+ * @project UDP_Server
+ * @File Request.java
  */
+
 public class Request
 {
     String via,from,to,callId,cSeq,contact,allow,maxForwards,
             userAgent,supported,contentLength;
     
-    public Request()
+    public Request()    //constructor
     {
         this.allow = "";
         this.cSeq = "";

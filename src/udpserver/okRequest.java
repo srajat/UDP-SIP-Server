@@ -1,13 +1,11 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package udpserver;
 
 /**
  *
- * @author Administrator
+ * @author Rajat Saxena & Shivam Dabral & Biwas Bisht
+ * @date 13/Jun/2016
+ * @project UDP_Server
+ * @File okRequest.java
  */
 public class okRequest extends inviteRequest
 {
@@ -38,18 +36,17 @@ public class okRequest extends inviteRequest
         fwd_res = fwd_res+ "Call-ID: " + callId + "\r\n";
         fwd_res = fwd_res + "CSeq: " + cSeq + "\r\n";
         
-        if(cSeq.contains("CANCEL"))
+        if(cSeq.contains("CANCEL"))     //If this OK is in response to a CANCEL then
         {
             String modifiedContact = contact.substring(0,contact.indexOf("@")+1)+ servIp+">"; 
             fwd_res = fwd_res + "Contact: " + modifiedContact + "\r\n";
         }
-        //fwd_res = fwd_res + "Allow: " + allow + "\r\n";
-        //fwd_res = fwd_res + "Max-Forwards: " + (Integer.parseInt(maxForwards.trim())-1) + "\r\n";
-        //fwd_res = fwd_res + "User-Agent: " + userAgent + "\r\n";
-        //fwd_res = fwd_res + "Supported: " + supported + "\r\n";
+        
         fwd_res = fwd_res + "Content-Length: " + contentLength + "\r\n\r\n";
         
-        if(!cSeq.contains("BYE") && !cSeq.contains("CANCEL"))
+        if(!cSeq.contains("BYE") && !cSeq.contains("CANCEL"))   /*If this OK is not in response to a
+                                                                  BYE or a CANCEL then
+                                                                 */
         {
             fwd_res = fwd_res + "v=" + v + "\r\n";
             fwd_res = fwd_res + "o=" + o + "\r\n";

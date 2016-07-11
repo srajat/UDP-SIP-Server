@@ -1,15 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package udpserver;
 
 import java.util.ArrayList;
 
 /**
  *
- * @author bloodphoenix
+ * @author Rajat Saxena & Shivam Dabral & Biwas Bisht
+ * @date 13/Jun/2016
+ * @project UDP_Server
+ * @File requestTerminatedRequest.java
  */
 public class requestTerminatedRequest extends Request
 {
@@ -44,7 +42,6 @@ public class requestTerminatedRequest extends Request
         String modifiedContact = contact.substring(0,contact.indexOf("@")+1)+ servIp+">"; 
         fwd_res = fwd_res + "Contact: " + modifiedContact + "\r\n";
         
-        //fwd_res = fwd_res + "Max-Forwards: " + (Integer.parseInt(maxForwards.trim())-1) + "\r\n";
         fwd_res = fwd_res + "User-Agent: " + userAgent + "\r\n";
         
         fwd_res = fwd_res + "Content-Length: 0" + "\r\n\r\n";
