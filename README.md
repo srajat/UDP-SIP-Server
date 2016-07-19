@@ -67,17 +67,27 @@
 
 ## Installation And Usage Guide <a name='guide'></a>
 
-1. DOWNLOAD PHONER ON CLIENT
-2. SET UP NETBEANS 8.0.2 or later with JDK 1.6 or later
-3. RUN THE CODE ON A SERVER SPECIFYING THE PORT AND IP
-4. RUN PHONER ON CLIENT COMPUTER AND SET SERVER IP AS REGISTRAR
-5. NOW DIAL THE NUMBER OF ANY REGISTERED USER AND CALL
-6. RTP SESSION IS ETABLISHED WHEN ‘CONNECTED’ IS DISPLAYED
-7. CLICK THE RED ‘END CALL’ WHEN FINISHED TALKING
-8. LOG SCREEN DURING ‘BUSY HERE’
-9. LOG SCREEN DURING NORMAL FLOW
-10. LOG SCREEN DURING CANCELATION
-
+<b>1. DOWNLOAD PHONER ON CLIENT</b> </br></br>
+ ![alt tag](https://raw.githubusercontent.com/srajat/UDP-SIP-Server/master/images/phoner.png) </br>
+<b>2. SET UP NETBEANS 8.0.2 or later with JDK 1.6 or later</b> </br></br>
+ ![alt tag](https://raw.githubusercontent.com/srajat/UDP-SIP-Server/master/images/netbeans.png) </br>
+<b>3. RUN THE CODE ON A SERVER SPECIFYING THE PORT AND IP</b> </br></br>
+ ![alt tag](https://raw.githubusercontent.com/srajat/UDP-SIP-Server/master/images/1.png) </br>
+clients will register one by one... </br>
+![alt tag](https://raw.githubusercontent.com/srajat/UDP-SIP-Server/master/images/2.png) </br>
+<b>4. RUN PHONER ON CLIENT COMPUTER AND SET SERVER IP AS REGISTRAR</b> </br></br>
+<b>5. NOW DIAL THE NUMBER OF ANY REGISTERED USER AND CALL</b> </br></br>
+ ![alt tag](https://raw.githubusercontent.com/srajat/UDP-SIP-Server/master/images/3.png) </br>
+<b>6. RTP SESSION IS ETABLISHED WHEN ‘CONNECTED’ IS DISPLAYED</b> </br></br>
+ ![alt tag](https://raw.githubusercontent.com/srajat/UDP-SIP-Server/master/images/4.png) </br>
+<b>7. CLICK THE RED ‘END CALL’ WHEN FINISHED TALKING</b> </br>
+<b>8. LOG SCREEN DURING ‘BUSY HERE’ </br></br>
+ ![alt tag](https://raw.githubusercontent.com/srajat/UDP-SIP-Server/master/images/5.png) </br>
+9. LOG SCREEN DURING NORMAL FLOW </br></br>
+ ![alt tag](https://raw.githubusercontent.com/srajat/UDP-SIP-Server/master/images/6.png) </br>
+10. LOG SCREEN DURING CANCELATION </br></br>
+ ![alt tag](https://raw.githubusercontent.com/srajat/UDP-SIP-Server/master/images/7.png) </br>
+</b>
 ## Links <a name='links'></a>
 
 Visit me:     [Rajat Saxena](http://www.rajatsaxena.in/)
